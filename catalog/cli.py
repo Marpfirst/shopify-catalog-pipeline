@@ -8,7 +8,8 @@ import json
 from pathlib import Path
 
 from . import export, store
-from .detect import detect_file
+from . import jsonld
+from .detect import check, detect_file
 from .fetch import iter_products
 from .mapping import map_row
 from .normalize import flatten
@@ -20,7 +21,15 @@ def cmd_sync(args, con) -> None:
     suppliers = json.loads(Path(args.config).read_text(encoding="utf-8"))
     for sup in suppliers:
         n = changes = 0
-        for raw in iter_products(sup["url"], delay=args.delay, max_pages=args.max_pages):
+        mode = sup.get("mode", "auto")
+        if mode == "auto":
+            mode = "shopify" if check(sup["url"])["products_json"] else "jsonld"
+        products = (iter_products(sup["url"], delay=args.delay, max_pages=args.max_pages)
+                    if mode == "shopify" else
+                    jsonld.iter_products(sup["url"], delay=args.delay, limit=args.limit,
+                                         render=args.render))
+        print(f"{sup['name']}: source = {mode}")
+        for raw in products:
             changes += store.save(con, *flatten(sup["name"], raw))
             n += 1
         con.commit()
@@ -73,6 +82,10 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--db", default=ROOT / "output" / "catalog.db")
     ap.add_argument("--out", default=ROOT / "output")
     ap.add_argument("--max-pages", type=int, default=4, help="250 products per page")
+    ap.add_argument("--limit", type=int, default=100,
+                    help="max product pages per store when products.json is closed")
+    ap.add_argument("--render", action="store_true",
+                    help="use headless Chromium for pages without server-side JSON-LD")
     ap.add_argument("--delay", type=float, default=1.0, help="seconds between page requests")
     ap.add_argument("--images", type=int, default=0, help="download N images per product")
     args = ap.parse_args(argv)

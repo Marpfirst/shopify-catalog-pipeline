@@ -9,7 +9,11 @@ colors/sizes, SKU, high-res images and availability — and when an order comes 
 know exactly which supplier variant to buy."*
 
 ```
-Supplier stores ──► fetch (paginated, rate-limited, retries)
+Supplier stores ──► source picked per store (auto):
+                      • Shopify with open products.json → 250 products per request
+                      • any other store (headless Shopify, WooCommerce, custom) →
+                        sitemap.xml product URLs + schema.org JSON-LD on each page
+                        (optional headless Chromium for client-rendered pages)
                       │
                       ▼
                SQLite product DB ──► change log (price / availability)
@@ -22,6 +26,11 @@ Supplier stores ──► fetch (paginated, rate-limited, retries)
 ```
 
 ## Results on real data
+
+Sources tested: Taylor Stitch, Allbirds, Kith (Shopify `products.json`) and Ruggable (headless
+Shopify with `products.json` closed → sitemap + JSON-LD: product groups with 13–38 size variants,
+sale and strike-through prices, stock per variant). Sites that answer with HTTP 429 / bot
+challenges are reported and skipped, not bypassed.
 
 Run against two public Shopify catalogs (Taylor Stitch, Allbirds), 500 products / 4,353 variants:
 
@@ -59,13 +68,13 @@ pip install -r requirements.txt
 python -m catalog all              # sync suppliers, map variants, export everything
 python -m catalog sync             # only refresh the product DB (logs price/stock changes)
 python -m catalog export --images 3   # also download 3 images per product
-python -m pytest                   # 16 tests
+python -m pytest                   # 20 tests
 ```
 
 - Check which sites are Shopify and scrapable: put domains in `sample/domains.txt`, run
   `python -m catalog detect` → `output/shopify_detect.csv` (signal: response header, page HTML
   or `products.json`; and whether `products.json` is open).
-- Suppliers: `config/suppliers.json` (`name`, `url`).
+- Suppliers: `config/suppliers.json` (`name`, `url`, optional `mode`: `auto` / `shopify` / `jsonld`). For non-`products.json` stores: `--limit N` product pages, `--render` for client-rendered pages (needs `playwright install chromium`).
 - Store catalog to map: `sample/store_catalog.csv` with
   `store_product, store_variant, supplier, supplier_handle (optional)`.
 - Schedule `python -m catalog sync` daily (cron, Windows Task Scheduler or GitHub Actions) to keep
