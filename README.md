@@ -27,6 +27,8 @@ Supplier stores ──► source picked per store (auto):
 
 ## Results on real data
 
+Trimmed sample outputs are in `sample/output/` (4 products of the Shopify import CSV, the variant mapping and the detection report); a full run writes to `output/`.
+
 Sources tested: Taylor Stitch, Allbirds, Kith (Shopify `products.json`) and Ruggable (headless
 Shopify with `products.json` closed → sitemap + JSON-LD: product groups with 13–38 size variants,
 sale and strike-through prices, stock per variant). Sites that answer with HTTP 429 / bot
