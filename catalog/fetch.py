@@ -15,7 +15,7 @@ def iter_products(base_url: str, delay: float = 1.0, max_pages: int = 100,
                   session: requests.Session | None = None) -> Iterator[dict]:
     """Yield raw product dicts, page by page, until the store returns an empty page."""
     s = session or requests.Session()
-    s.headers.setdefault("User-Agent", USER_AGENT)
+    s.headers["User-Agent"] = USER_AGENT
     base = base_url.rstrip("/")
     for page in range(1, max_pages + 1):
         resp = _get(s, f"{base}/products.json", {"limit": PAGE_SIZE, "page": page})

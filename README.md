@@ -59,9 +59,12 @@ pip install -r requirements.txt
 python -m catalog all              # sync suppliers, map variants, export everything
 python -m catalog sync             # only refresh the product DB (logs price/stock changes)
 python -m catalog export --images 3   # also download 3 images per product
-python -m pytest                   # 13 tests
+python -m pytest                   # 16 tests
 ```
 
+- Check which sites are Shopify and scrapable: put domains in `sample/domains.txt`, run
+  `python -m catalog detect` → `output/shopify_detect.csv` (signal: response header, page HTML
+  or `products.json`; and whether `products.json` is open).
 - Suppliers: `config/suppliers.json` (`name`, `url`).
 - Store catalog to map: `sample/store_catalog.csv` with
   `store_product, store_variant, supplier, supplier_handle (optional)`.

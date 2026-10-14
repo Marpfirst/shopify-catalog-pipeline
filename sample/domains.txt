@@ -1,0 +1,10 @@
+# one domain per line
+taylorstitch.com
+allbirds.com
+kith.com
+gymshark.com
+bombas.com
+ruggable.com
+nike.com
+zara.com
+example.com

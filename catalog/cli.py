@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 from . import export, store
+from .detect import detect_file
 from .fetch import iter_products
 from .mapping import map_row
 from .normalize import flatten
@@ -51,9 +52,22 @@ def cmd_export(args, con, mapping: list[dict] | None = None) -> None:
     print(f"report -> {out / 'catalog_report.xlsx'}")
 
 
+def cmd_detect(args) -> None:
+    out = Path(args.out) / "shopify_detect.csv"
+    rows = detect_file(Path(args.domains), out)
+    for r in rows:
+        status = ("SHOPIFY, products.json open" if r["products_json"] else
+                  "SHOPIFY, products.json closed" if r["shopify"] else
+                  f"error: {r['error']}" if r["error"] else "not Shopify")
+        print(f"{r['domain']:35} {status}")
+    print(f"{sum(r['products_json'] for r in rows)}/{len(rows)} scrapable -> {out}")
+
+
 def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(prog="catalog", description=__doc__)
-    ap.add_argument("command", choices=["sync", "map", "export", "all"])
+    ap.add_argument("command", choices=["sync", "map", "export", "all", "detect"])
+    ap.add_argument("--domains", default=ROOT / "sample" / "domains.txt",
+                    help="detect: text file, one domain per line")
     ap.add_argument("--config", default=ROOT / "config" / "suppliers.json")
     ap.add_argument("--store-catalog", default=ROOT / "sample" / "store_catalog.csv")
     ap.add_argument("--db", default=ROOT / "output" / "catalog.db")
@@ -64,6 +78,8 @@ def main(argv: list[str] | None = None) -> None:
     args = ap.parse_args(argv)
 
     Path(args.out).mkdir(parents=True, exist_ok=True)
+    if args.command == "detect":
+        return cmd_detect(args)
     con = store.connect(args.db)
     mapping = None
     if args.command in ("sync", "all"):
